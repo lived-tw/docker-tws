@@ -103,29 +103,30 @@ def copy_initial_data():
         shutil.copy('/conf/jts.ini',
                     os.path.expanduser('~/Jts/jts.ini'))
 
-    if os.path.exists('/conf/tws.xml'):
-        with open('/conf/tws.xml', 'rb') as fp:
-            xml = fp.read()
-    elif os.path.exists('/conf/tws.xml.gz'):
-        with gzip.open('/conf/tws.xml.gz', 'rb') as fp:
-            xml = fp.read()
-    elif os.path.exists('/conf/tws.xml.zst'):
-        xml = subprocess.check_output(['zstd', '-cd', '/conf/tws.xml.zst'],
-                                      encoding=None)
-    else:
-        return
+    ## 20230406: tws.xml is now encrypted, rewrite tws.xml is not working.
+    #if os.path.exists('/conf/tws.xml'):
+    #    with open('/conf/tws.xml', 'rb') as fp:
+    #        xml = fp.read()
+    #elif os.path.exists('/conf/tws.xml.gz'):
+    #    with gzip.open('/conf/tws.xml.gz', 'rb') as fp:
+    #        xml = fp.read()
+    #elif os.path.exists('/conf/tws.xml.zst'):
+    #    xml = subprocess.check_output(['zstd', '-cd', '/conf/tws.xml.zst'],
+    #                                  encoding=None)
+    #else:
+    #    return
 
-    if os.environ.get('TWS_API_PORT') or os.environ.get('TWS_LOGOFF_TIME'):
-        xml = rewrite_tws_xml(xml)
+    #if os.environ.get('TWS_API_PORT') or os.environ.get('TWS_LOGOFF_TIME'):
+    #    xml = rewrite_tws_xml(xml)
 
-    for name in get_profile_dirs():
-        profile_dir = os.path.join('~/Jts', name)
-        os.makedirs(os.path.expanduser(profile_dir), exist_ok=True)
+    #for name in get_profile_dirs():
+    #    profile_dir = os.path.join('~/Jts', name)
+    #    os.makedirs(os.path.expanduser(profile_dir), exist_ok=True)
 
-        path = os.path.expanduser(os.path.join(profile_dir, 'tws.xml'))
-        if not os.path.exists(path):
-            with open(path, 'wb') as fp:
-                fp.write(xml)
+    #    path = os.path.expanduser(os.path.join(profile_dir, 'tws.xml'))
+    #    if not os.path.exists(path):
+    #        with open(path, 'wb') as fp:
+    #            fp.write(xml)
 
 
 def write_ibc_config():
@@ -360,6 +361,20 @@ def start_tws():
         env=dict(os.environ, **{'I_AM_TWS': '1'})
     )
 
+def start_ibc():
+    os.environ['DISPLAY'] = ':' + VNC_DISPLAY
+
+    subprocess.check_call([
+        'xsetroot',
+        '-solid', os.environ.get('X11_ROOT_COLOR', '#473C8B')
+    ])
+
+    wm = subprocess.Popen(['openbox'])
+    tws_path = '/home/tws/Jts/current/tws'
+    return subprocess.Popen(
+        args=['/opt/ibc/scripts/ibcstart.sh','current','--tws-path=/home/tws/Jts','--ibc-path=/opt/ibc','--ibc-ini=/home/tws/ibc/config.ini'],
+        env=dict(os.environ, **{'I_AM_TWS': '1'})
+    )
 
 def is_process_alive(pid):
     try:
@@ -407,6 +422,7 @@ def block_until_exit(proc):
     pid = proc.pid
     while pid is not None:
         wait_for_completion(pid)
+        time.sleep(5)
         pid = find_tws_process()
 
 
@@ -452,13 +468,14 @@ def main():
     cleanup_x11()
     copy_initial_data()
     write_ibc_config()
-    update_jvm_options()
+    #update_jvm_options()
     if not start_vnc_server():
         return
 
     forwarder = start_logs_forwarder()
     try:
-        block_until_exit(start_tws())
+        #block_until_exit(start_tws())
+        block_until_exit(start_ibc())
     finally:
         forwarder.terminate()
         forwarder.wait()

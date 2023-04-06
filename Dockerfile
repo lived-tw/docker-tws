@@ -31,10 +31,16 @@ RUN \
         libnss3 \
         zstd \
         \
+        libcurl3-gnutls \
+        libcurl3-nss \
+        libcurl4 \
+        libu2f-udev \
+        libvulkan1 \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists /usr/share/{doc,man} && \
     useradd -m -s /bin/bash tws
+
 
 RUN \
     wget -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
@@ -43,7 +49,9 @@ RUN \
     sed -ie 's/^exec.*/\0 --no-sandbox/' /opt/google/chrome/google-chrome
 
 RUN \
-    wget -O /tmp/tws.sh https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh && \
+#    wget -O /tmp/tws.sh https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh && \
+#    wget -O /tmp/tws.sh https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh && \
+    wget -O /tmp/tws.sh https://github.com/lived-tw/docker-tws/releases/download/tws/tws-10.19.1k-standalone-linux-x64.sh && \
         runuser -u tws -- mkdir -p /home/tws/.vnc && \
         echo x | vncpasswd -f > /home/tws/.vnc/passwd && \
         chown -R tws: /home/tws/.vnc && \
@@ -64,9 +72,8 @@ ENTRYPOINT ["/tini", "--"]
 
 COPY configs/openbox_rc.xml /etc/xdg/openbox/rc.xml
 
-#wget -O /tmp/ibc.zip https://github.com/IbcAlpha/IBC/releases/download/3.8.2/IBCLinux-3.8.2.zip && \
 RUN \
-    wget -O /tmp/ibc.zip https://github.com/docker-tws/IBC/releases/download/initial/IBCLinux-3.8.2.zip && \
+    wget -O /tmp/ibc.zip https://github.com/IbcAlpha/IBC/releases/download/3.16.2/IBCLinux-3.16.2.zip && \
         mkdir -p /opt/ibc && \
         unzip -d /opt/ibc /tmp/ibc.zip && \
         chmod +x /opt/ibc/*.sh /opt/ibc/*/*.sh && \
